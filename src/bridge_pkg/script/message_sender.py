@@ -23,6 +23,17 @@ async def advertise(uri, topic, type):
     }
     await send_data(uri, message)
 
+def send_robot_direction():
+    rospy.loginfo("Fetching robot_description")
+    robot_description = rospy.get_param('/robot_description')
+    message = {
+        'op': 'publish',
+        'topic': '/robot_description',
+        'msg': robot_description
+    }
+    asyncio.run(send_data(URI, message))
+
+
 def marker_msgs_callback(data):
     rospy.loginfo("Received Marker message")
     message = {
@@ -123,9 +134,12 @@ def compressed_image_msgs_callback(data):
 def listener():
     rospy.init_node('message_sender', anonymous=True)
 
+    asyncio.run(advertise(URI, '/robot_description', 'std_msgs/String'))
     asyncio.run(advertise(URI, '/visualization_marker', 'visualization_msgs/Marker'))
     asyncio.run(advertise(URI, '/xtion/rgb/image_raw', 'sensor_msgs/Image'))
     asyncio.run(advertise(URI, '/xtion/rgb/image_raw/compressed', 'sensor_msgs/CompressedImage'))
+
+    send_robot_direction()
 
     rospy.Subscriber('/visualization_marker', Marker, marker_msgs_callback)
     rospy.Subscriber('/xtion/rgb/image_raw', Image, image_msgs_callback)
